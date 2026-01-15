@@ -1,6 +1,6 @@
 package com.simohoff.banking_service.domain;
 
-public class TransactionType {
+public enum TransactionType {
     CREDIT, // Einzahlung
-    DEBIT //Auszahlung
+    DEBIT   // Auszahlung
 }
