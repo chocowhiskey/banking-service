@@ -4,6 +4,9 @@ import com.simohoff.banking_service.domain.Account;
 import com.simohoff.banking_service.domain.Transaction;
 import com.simohoff.banking_service.dto.*;
 import com.simohoff.banking_service.service.AccountService;
+import com.simohoff.banking_service.service.TransferService;
+import com.simohoff.banking_service.service.TransferService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +18,11 @@ import java.util.List;
 public class AccountController {
 
     private final AccountService accountService;
+    private final TransferService transferService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, TransferService transferService) {
         this.accountService = accountService;
+        this.transferService = transferService;
     }
 
     /**
@@ -84,5 +89,18 @@ public class AccountController {
         return accountService.getTransactions(iban).stream()
                 .map(TransactionResponse::from)
                 .toList();
+    }
+
+    /**
+     * POST /api/accounts/transfer
+     * Überweist Geld zwischen zwei Konten
+     */
+    @PostMapping("/transfer")
+    public TransferResponse transfer(@Valid @RequestBody TransferRequest request) {
+        return transferService.transfer(
+                request.fromIban(),
+                request.toIban(),
+                request.amount(),
+                request.reference());
     }
 }
