@@ -5,6 +5,9 @@ import com.simohoff.banking_service.domain.Transaction;
 import com.simohoff.banking_service.exception.AccountNotFoundException;
 import com.simohoff.banking_service.repository.AccountRepository;
 import com.simohoff.banking_service.repository.TransactionRepository;
+
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,16 +54,32 @@ public class AccountService {
      */
     @Transactional
     public Transaction debit(String iban, BigDecimal amount, String reference) {
-        Account account = getAccount(iban);
+        int maxRetries = 3;
+        int attempt = 0;
 
-        // Domain-Logik validiert automatisch!
-        Transaction transaction = account.debit(amount, reference);
+        while (attempt < maxRetries) {
+            try {
+                Account account = getAccount(iban);
+                Transaction transaction = account.debit(amount, reference);
 
-        // Beide Änderungen in EINER Transaktion
-        accountRepository.save(account);
-        transactionRepository.save(transaction);
+                accountRepository.save(account);
+                transactionRepository.save(transaction);
 
-        return transaction;
+                return transaction;
+            } catch (OptimisticLockException | ObjectOptimisticLockingFailureException e) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    throw new RuntimeException("Debit failed after retries", e);
+                }
+                try {
+                    Thread.sleep(10 * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Debit interrupted", ie);
+                }
+            }
+        }
+        throw new RuntimeException("Debit failed");
     }
 
     /**
@@ -68,14 +87,32 @@ public class AccountService {
      */
     @Transactional
     public Transaction credit(String iban, BigDecimal amount, String reference) {
-        Account account = getAccount(iban);
+        int maxRetries = 3;
+        int attempt = 0;
 
-        Transaction transaction = account.credit(amount, reference);
+        while (attempt < maxRetries) {
+            try {
+                Account account = getAccount(iban);
+                Transaction transaction = account.credit(amount, reference);
 
-        accountRepository.save(account);
-        transactionRepository.save(transaction);
+                accountRepository.save(account);
+                transactionRepository.save(transaction);
 
-        return transaction;
+                return transaction;
+            } catch (OptimisticLockException | ObjectOptimisticLockingFailureException e) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    throw new RuntimeException("Credit failed after retries", e);
+                }
+                try {
+                    Thread.sleep(10 * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Credit interrupted", ie);
+                }
+            }
+        }
+        throw new RuntimeException("Credit failed");
     }
 
     /**

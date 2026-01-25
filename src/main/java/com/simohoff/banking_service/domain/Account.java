@@ -28,6 +28,9 @@ public class Account {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Version // NEU! Optimistic Locking
+    private Long version;
+
     public Account(String iban, String ownerName) {
         this.iban = iban;
         this.ownerName = ownerName;
@@ -35,14 +38,8 @@ public class Account {
         this.createdAt = LocalDateTime.now();
     }
 
-    // ========== DOMAIN LOGIC (NEU!) ==========
+    // ... rest bleibt gleich (debit, credit, validateAmount)
 
-    /**
-     * Bucht einen Betrag vom Konto ab.
-     * 
-     * @throws IllegalArgumentException wenn Betrag negativ oder Kontostand nicht
-     *                                  ausreicht
-     */
     public Transaction debit(BigDecimal amount, String reference) {
         validateAmount(amount);
 
@@ -55,11 +52,6 @@ public class Account {
         return new Transaction(amount, TransactionType.DEBIT, reference, this);
     }
 
-    /**
-     * Bucht einen Betrag auf das Konto ein.
-     * 
-     * @throws IllegalArgumentException wenn Betrag negativ
-     */
     public Transaction credit(BigDecimal amount, String reference) {
         validateAmount(amount);
 
