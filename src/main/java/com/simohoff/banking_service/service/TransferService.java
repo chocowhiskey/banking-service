@@ -29,7 +29,7 @@ public class TransferService {
          * Überweist Geld zwischen zwei Konten mit Retry bei Optimistic Lock Failures.
          */
         public TransferResponse transfer(String fromIban, String toIban, BigDecimal amount, String reference) {
-                int maxRetries = 3;
+                int maxRetries = 10;
                 int attempt = 0;
 
                 while (attempt < maxRetries) {
@@ -43,9 +43,10 @@ public class TransferService {
                                                                         + " retries due to concurrent modifications",
                                                         e);
                                 }
-                                // Kurz warten vor erneutem Versuch
+                                // Längeres exponentielles Backoff vor erneutem Versuch
                                 try {
-                                        Thread.sleep(10 * attempt); // Exponentielles Backoff
+                                        long waitTime = 50L * (long) Math.pow(2, attempt); // 100ms, 200ms, 400ms, 800ms...
+                                        Thread.sleep(waitTime);
                                 } catch (InterruptedException ie) {
                                         Thread.currentThread().interrupt();
                                         throw new RuntimeException("Transfer interrupted", ie);

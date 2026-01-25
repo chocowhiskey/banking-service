@@ -108,6 +108,13 @@ class ConcurrencyTest {
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch latch = new CountDownLatch(1);
         List<Future<Boolean>> futures = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        // Pre-create all target accounts before starting concurrent transfers
+        for (int i = 0; i < numberOfThreads; i++) {
+            String targetIban = "DE_MULTI_" + String.format("%02d", i) + "_TARGET";
+            accountService.createAccount(targetIban, "Target " + i);
+        }
 
         // When - 10 Threads, jeder überweist 50 EUR
         for (int i = 0; i < numberOfThreads; i++) {
@@ -117,9 +124,8 @@ class ConcurrencyTest {
                 try {
                     latch.await();
 
-                    // Eindeutige IBAN für diesen Thread
-                    String targetIban = sourceIban.replace("SRC", "MULTI_" + threadNum);
-                    accountService.createAccount(targetIban, "Target " + threadNum);
+                    // Verwende die pre-created IBAN
+                    String targetIban = "DE_MULTI_" + String.format("%02d", threadNum) + "_TARGET";
 
                     transferService.transfer(
                             sourceIban,
@@ -128,7 +134,10 @@ class ConcurrencyTest {
                             "Transfer #" + threadNum);
                     return true;
                 } catch (Exception e) {
-                    System.out.println("Multi transfer failed: " + e.getMessage());
+                    String errorMsg = "Multi transfer #" + threadNum + " failed: " + e.getMessage();
+                    System.out.println(errorMsg);
+                    errors.add(errorMsg);
+                    e.printStackTrace();
                     return false;
                 }
             });
@@ -145,6 +154,14 @@ class ConcurrencyTest {
         for (Future<Boolean> future : futures) {
             if (future.get()) {
                 successfulTransfers++;
+            }
+        }
+
+        System.out.println("Successful transfers: " + successfulTransfers);
+        if (!errors.isEmpty()) {
+            System.out.println("Errors found:");
+            for (String error : errors) {
+                System.out.println("  - " + error);
             }
         }
 

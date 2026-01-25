@@ -54,7 +54,7 @@ public class AccountService {
      */
     @Transactional
     public Transaction debit(String iban, BigDecimal amount, String reference) {
-        int maxRetries = 3;
+        int maxRetries = 10;
         int attempt = 0;
 
         while (attempt < maxRetries) {
@@ -72,7 +72,8 @@ public class AccountService {
                     throw new RuntimeException("Debit failed after retries", e);
                 }
                 try {
-                    Thread.sleep(10 * attempt);
+                    long waitTime = 50L * (long) Math.pow(2, attempt); // 100ms, 200ms, 400ms, 800ms...
+                    Thread.sleep(waitTime);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Debit interrupted", ie);
@@ -87,7 +88,7 @@ public class AccountService {
      */
     @Transactional
     public Transaction credit(String iban, BigDecimal amount, String reference) {
-        int maxRetries = 3;
+        int maxRetries = 10;
         int attempt = 0;
 
         while (attempt < maxRetries) {
@@ -105,7 +106,8 @@ public class AccountService {
                     throw new RuntimeException("Credit failed after retries", e);
                 }
                 try {
-                    Thread.sleep(10 * attempt);
+                    long waitTime = 50L * (long) Math.pow(2, attempt); // 100ms, 200ms, 400ms, 800ms...
+                    Thread.sleep(waitTime);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Credit interrupted", ie);
