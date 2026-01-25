@@ -45,7 +45,8 @@ public class TransferService {
                                 }
                                 // Längeres exponentielles Backoff vor erneutem Versuch
                                 try {
-                                        long waitTime = 50L * (long) Math.pow(2, attempt); // 100ms, 200ms, 400ms, 800ms...
+                                        long waitTime = 50L * (long) Math.pow(2, attempt); // 100ms, 200ms, 400ms,
+                                                                                           // 800ms...
                                         Thread.sleep(waitTime);
                                 } catch (InterruptedException ie) {
                                         Thread.currentThread().interrupt();
